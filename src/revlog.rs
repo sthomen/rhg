@@ -179,7 +179,7 @@ impl Revlog {
 		match version {
 			0 => index = Index::V0(IndexV0::from_file(file)?),
 			1 => index = Index::NG(IndexNG::from_file(file)?),
-			_ => panic!("Unknown file version!")
+			_ => panic!("Unknown file version {}!", version)
 		}
 
 		Ok(index)

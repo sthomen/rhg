@@ -26,6 +26,7 @@ use byteorder::{ByteOrder, BigEndian};
  */
 
 
+#[derive(Debug)]
 pub struct IndexV0 {
 	offset: u32,
 	length: u32,
@@ -49,10 +50,10 @@ impl IndexV0 {
 		file.read_exact(&mut nodeid)?;
 
 		Ok(IndexV0 {
-			offset: BigEndian::read_u32(&bytes[0..5]),
-			length: BigEndian::read_u32(&bytes[5..10]),
-			baserev: BigEndian::read_u32(&bytes[10..15]),
-			linkrev: BigEndian::read_u32(&bytes[15..19]),
+			offset: BigEndian::read_u32(&bytes[0..4]),
+			length: BigEndian::read_u32(&bytes[4..8]),
+			baserev: BigEndian::read_u32(&bytes[8..12]),
+			linkrev: BigEndian::read_u32(&bytes[12..16]),
 			parent1: parent1,
 			parent2: parent2,
 			nodeid: nodeid
@@ -78,6 +79,7 @@ impl IndexV0 {
  */
 
 
+#[derive(Debug)]
 pub struct IndexNG {
 	offset: u64,	// actually u48, but that doesn't exist
 	flags: u16,
@@ -92,27 +94,31 @@ pub struct IndexNG {
 
 impl IndexNG {
 	fn from_file(mut file: &File) -> Result<IndexNG> {
-		let mut bytes = [0u8; 40];
+		let mut bytes = [0u8; 32];
 		let mut nodeid = [0u8; 32];
+
+		let pos = file.seek(SeekFrom::Current(0))?;
 
 		file.read_exact(&mut bytes)?;
 		file.read_exact(&mut nodeid)?;
 
 		Ok(IndexNG {
-			offset:   BigEndian::read_u48(&bytes[0..7]),
-			flags:    BigEndian::read_u16(&bytes[7..10]),
-			length_compressed: BigEndian::read_u32(&bytes[10..15]),
-			length:   BigEndian::read_u32(&bytes[15..20]),
-			baserev:  BigEndian::read_u32(&bytes[20..25]),
-			linkrev:  BigEndian::read_u32(&bytes[25..30]),
-			parent1:  BigEndian::read_u32(&bytes[30..35]),
-			parent2:  BigEndian::read_u32(&bytes[35..40]),
+			// if we're at the start of the file, then the offset is the file
+			// verison, not an actual offset
+			offset:   if pos == 0 { 0 } else { BigEndian::read_u48(&bytes[0..6]) },
+			flags:    BigEndian::read_u16(&bytes[6..8]),
+			length_compressed: BigEndian::read_u32(&bytes[8..12]),
+			length:   BigEndian::read_u32(&bytes[12..16]),
+			baserev:  BigEndian::read_u32(&bytes[16..20]),
+			linkrev:  BigEndian::read_u32(&bytes[20..24]),
+			parent1:  BigEndian::read_u32(&bytes[24..28]),
+			parent2:  BigEndian::read_u32(&bytes[28..32]),
 			nodeid:   nodeid
 		})
 	}
 }
 
-
+#[derive(Debug)]
 pub enum Index {
 	V0(IndexV0),
 	NG(IndexNG)

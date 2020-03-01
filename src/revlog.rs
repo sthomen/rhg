@@ -134,7 +134,8 @@ pub const REVLOG_FLAG_GENERALDELTA: u32 = 1 << 17;
 // for the version number from those. Is there a general rule for which
 // bits are reserved for flags? The python source and what documentation
 // I've found does not tell.
-const REVLOG_FLAG_MASK: u32 = !(REVLOG_FLAG_INLINE_DATA | REVLOG_FLAG_GENERALDELTA);
+// Give then values above though, I'm gussing the higher 16 bits are the flags.
+const REVLOG_FLAG_MASK: u32 = 0x0000ffff;
 
 pub struct Revlog {
 	pub version: u32,

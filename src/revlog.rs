@@ -173,7 +173,7 @@ impl Revlog {
 		self.flags & flag != 0
 	}
 
-	fn read_index(mut file: &File, version: u32) -> Result<Index> {
+	fn read_index(file: &File, version: u32) -> Result<Index> {
 		let index: Index;
 
 		match version {

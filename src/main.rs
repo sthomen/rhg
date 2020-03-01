@@ -8,7 +8,7 @@ use revlog::Revlog;
 fn main() -> Result<()> {
 	let args: Vec<String> = env::args().collect();
 
-	if args.len() > 2 {
+	if args.len() > 1 {
 		let file = File::open(&args[1])?;
 		let revlog = Revlog::from_file(file);
 

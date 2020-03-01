@@ -34,14 +34,36 @@ pub struct Revlog {
 }
 
 impl Revlog {
-	pub fn from_file(file: File) -> Revlog {
+	pub fn from_file(mut file: File) -> Result<Revlog> {
 		let (version, flags) = Revlog::read_version(&file).unwrap();
+		let mut index = Vec::new();
 
-		Revlog {
+		loop {
+			let result = Revlog::read_index(&file, version);
+
+			if result.is_err() {
+				// XXX for now, how do we know this is an expected EOF?
+				break;
+			}
+
+			let entry = result.unwrap();
+
+			// TODO instead of just skiping here, load the changeset data somewhere
+			if flags & REVLOG_FLAG_INLINE_DATA != 0 {
+				match entry {
+					Index::NG(ref e) => file.seek(SeekFrom::Current(e.len().into()))?,
+					Index::V0(ref e) => file.seek(SeekFrom::Current(e.len().into()))?
+				};
+			}
+
+			index.push(entry);
+		}
+
+		Ok(Revlog {
 			version: version,
 			flags: flags,
-			index: vec![Revlog::read_index(&file, version).unwrap()]
-		}
+			index: index
+		})
 	}
 
 	fn read_version(mut file: &File) -> Result<(u32, u32)> {

@@ -10,7 +10,7 @@ fn main() -> Result<()> {
 
 	if args.len() > 1 {
 		let file = File::open(&args[1])?;
-		let revlog = Revlog::from_file(file);
+		let revlog = Revlog::from_file(file)?;
 
 		println!("Revlog version = {}, flags = 0x{:x}", revlog.version, revlog.flags);
 		println!("{:?}", revlog.index);

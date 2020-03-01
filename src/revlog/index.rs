@@ -52,6 +52,10 @@ impl IndexV0 {
 			nodeid: nodeid
 		})
 	}
+
+	pub fn len(&self) -> u32 {
+		self.length
+	}
 }
 
 
@@ -108,6 +112,10 @@ impl IndexNG {
 			parent2:  BigEndian::read_u32(&bytes[28..32]),
 			nodeid:   nodeid
 		})
+	}
+
+	pub fn len(&self) -> u32 {
+		self.length_compressed
 	}
 }
 

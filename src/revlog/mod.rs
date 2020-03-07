@@ -35,28 +35,24 @@ pub struct Revlog {
 
 impl Revlog {
 	pub fn from_file(mut file: File) -> Result<Revlog> {
-		let (version, flags) = Revlog::read_version(&file).unwrap();
+		let (version, flags, length) = Revlog::read_version(&file).unwrap();
 		let mut index = Vec::new();
 
 		loop {
-			let result = Revlog::read_index(&file, version);
-
-			if result.is_err() {
-				// XXX for now, how do we know this is an expected EOF?
-				break;
-			}
-
-			let entry = result.unwrap();
+			let entry = Revlog::read_index(&file, version)?;
 
 			// TODO instead of just skiping here, load the changeset data somewhere
 			if flags & REVLOG_FLAG_INLINE_DATA != 0 {
-				match entry {
-					Index::NG(ref e) => file.seek(SeekFrom::Current(e.len().into()))?,
-					Index::V0(ref e) => file.seek(SeekFrom::Current(e.len().into()))?
-				};
+				println!("Skipping {} bytes of inline data", entry.length());
+				file.seek(SeekFrom::Current(entry.length().into()))?;
 			}
 
 			index.push(entry);
+
+			// At the exact end, loading is successful
+			if file.seek(SeekFrom::Current(0))? == length {
+				break;
+			}
 		}
 
 		Ok(Revlog {
@@ -66,19 +62,24 @@ impl Revlog {
 		})
 	}
 
-	fn read_version(mut file: &File) -> Result<(u32, u32)> {
+	fn read_version(mut file: &File) -> Result<(u32, u32, u64)> {
 		let mut bytes = [0u8; 4];
 
+		// load file version info
 		file.read_exact(&mut bytes)?;
 
+		// ..parse
 		let number = BigEndian::read_u32(&bytes);
 		let version = number & REVLOG_FLAG_MASK;
 		let flags = number & !version;
 
+		// find the length of the file
+		let length = file.seek(SeekFrom::End(0))?;
+
 		// rewind, so that we can read the first index normally
 		file.seek(SeekFrom::Start(0))?;
 
-		Ok((version, flags))
+		Ok((version, flags, length))
 	}
 
 	pub fn flag(&self, flag: u32) -> bool {

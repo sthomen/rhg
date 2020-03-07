@@ -21,13 +21,14 @@ use byteorder::{ByteOrder, BigEndian};
 
 #[derive(Debug)]
 pub struct IndexV0 {
-	offset: u32,
-	length: u32,
-	baserev: u32,
-	linkrev: u32,
-	parent1: [u8; 20],
-	parent2: [u8; 20],
-	nodeid: [u8;20]
+	pub offset: u32,
+	pub length: u32,
+	pub baserev: u32,
+	pub linkrev: u32,
+	pub parent1: [u8; 20],
+	pub parent2: [u8; 20],
+	pub nodeid: [u8; 20],
+	pub data: Option<Vec<u8>>
 }
 
 impl IndexV0 {
@@ -49,12 +50,9 @@ impl IndexV0 {
 			linkrev: BigEndian::read_u32(&bytes[12..16]),
 			parent1: parent1,
 			parent2: parent2,
-			nodeid: nodeid
+			nodeid: nodeid,
+			data: None
 		})
-	}
-
-	pub fn len(&self) -> u32 {
-		self.length
 	}
 }
 
@@ -113,10 +111,6 @@ impl IndexNG {
 			nodeid:   nodeid
 		})
 	}
-
-	pub fn len(&self) -> u32 {
-		self.length_compressed
-	}
 }
 
 #[derive(Debug)]
@@ -125,3 +119,25 @@ pub enum Index {
 	NG(IndexNG)
 }
 
+impl Index {
+	/**
+	 * Returns the offset of the data as an u64, even though the internal
+	 * representation is eithe 32 bit or 48 bit
+	 */
+	pub fn offset(&self) -> u64 {
+		match *self {
+			Index::V0(ref e) => e.offset as u64,
+			Index::NG(ref e) => e.offset
+		}
+	}
+
+	/**
+	 * Returns the length of the (compressed for NG) data entry.
+	 */
+	pub fn length(&self) -> u32 {
+		match *self {
+			Index::V0(ref e) => e.length,
+			Index::NG(ref e) => e.length_compressed
+		}
+	}
+}

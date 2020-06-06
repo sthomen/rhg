@@ -21,10 +21,10 @@ use byteorder::{ByteOrder, BigEndian};
 
 #[derive(Debug)]
 pub struct IndexV0 {
-	pub offset: u32,
-	pub length: u32,
-	pub baserev: u32,
-	pub linkrev: u32,
+	offset: u32,
+	length: u32,
+	baserev: u32,
+	linkrev: u32,
 	pub parent1: [u8; 20],
 	pub parent2: [u8; 20],
 	pub nodeid: [u8; 20]
@@ -74,12 +74,12 @@ impl IndexV0 {
 
 #[derive(Debug)]
 pub struct IndexNG {
-	pub offset: u64,	// actually u48, but that doesn't exist
-	pub flags: u16,
-	pub length_compressed: u32,
-	pub length: u32,
-	pub baserev: u32,
-	pub linkrev: u32,
+	offset: u64,	// actually u48, but that doesn't exist
+	flags: u16,
+	length_compressed: u32,
+	length: u32,
+	baserev: u32,
+	linkrev: u32,
 	pub parent1: u32,
 	pub parent2: u32,
 	pub nodeid: [u8; 32]

@@ -1,3 +1,9 @@
+#![allow(dead_code)]
+// We're allowing dead code here because REVLOG_FLAG_GENERALDELTA is really
+// only useful occasionally and for old versions of the revlog, so it would
+// ALWAYS throw a damn warning, as well as has_flag() being mostly useful
+// outside this crate.
+
 extern crate byteorder;
 
 mod index;
@@ -43,7 +49,6 @@ impl Revlog {
 
 			// TODO instead of just skiping here, load the changeset data somewhere
 			if flags & REVLOG_FLAG_INLINE_DATA != 0 {
-				println!("Skipping {} bytes of inline data", entry.length());
 				file.seek(SeekFrom::Current(entry.length().into()))?;
 			}
 

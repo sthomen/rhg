@@ -147,8 +147,8 @@ impl Index {
 	 */
 	pub fn flags(&self) -> u16 {
 		match *self {
-			Index::V0(ref _e) => 0,
-			Index::NG(ref e) => e.flags
+			Index::NG(ref e) => e.flags,
+			_ => 0
 		}
 	}
 

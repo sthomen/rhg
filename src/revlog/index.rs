@@ -1,6 +1,8 @@
 extern crate byteorder;
+extern crate hex;
 
 use std::fs::File;
+use std::string::String;
 use std::io::{Result, Read, Seek, SeekFrom};
 use byteorder::{ByteOrder, BigEndian};
 
@@ -27,7 +29,7 @@ pub struct IndexV0 {
 	linkrev: u32,
 	pub parent1: [u8; 20],
 	pub parent2: [u8; 20],
-	pub nodeid: [u8; 20]
+	nodeid: [u8; 20]
 }
 
 impl IndexV0 {
@@ -82,7 +84,7 @@ pub struct IndexNG {
 	linkrev: u32,
 	pub parent1: u32,
 	pub parent2: u32,
-	pub nodeid: [u8; 32]
+	nodeid: [u8; 32]
 }
 
 impl IndexNG {
@@ -126,15 +128,7 @@ macro_rules! simple_disambiguation {
 	}
 }
 
-macro_rules! nodeid_variant_to_vec {
-	($variant:ident, $parameter:ident) => {
-		match *$variant {
-			Index::V0(ref e) => e.$parameter.iter().cloned().collect(),
-			Index::NG(ref e) => e.$parameter.iter().cloned().collect()
-		}
-	}
-}
-
+#[allow(dead_code)]
 impl Index {
 	/**
 	 * Returns the offset of the data as an u64, even though the internal
@@ -183,10 +177,35 @@ impl Index {
 	}
 
 	/**
-	 * Node ID:s are of variable length between the versions, so let's just
-	 * return a Vec of them.
+	 * Node ID:s are of variable length between the versions, so this
+	 * normalizes to 32 bytes and keeps the top bytes zero.
 	 */
-	pub fn nodeid(&self) -> Vec<u8> {
-		nodeid_variant_to_vec!(self, nodeid)
+	pub fn nodeid(&self) -> [u8; 32] {
+		match *self {
+			Index::V0(ref e) => {
+				let mut nodeid = [0u8;32];
+
+				for n in 0 .. 20 {
+					nodeid[n] = e.nodeid[n];
+				}
+
+				nodeid
+			},
+			Index::NG(ref e) => e.nodeid
+		}
+	}
+
+	/**
+	 * Return the node id as a hex-encoded string
+	 */
+	pub fn id(&self) -> String {
+		hex::encode(&self.nodeid())
+	}
+
+	/**
+	 * Return the short (six bytes) node id as a hex-encoded string
+	 */
+	pub fn short_id(&self) -> String {
+		hex::encode(&self.nodeid()[0..6])
 	}
 }

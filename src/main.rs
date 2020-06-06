@@ -3,6 +3,7 @@ mod revlog;
 use std::env;
 use std::io::Result;
 use std::fs::File;
+
 use revlog::Revlog;
 
 fn main() -> Result<()> {
@@ -13,6 +14,10 @@ fn main() -> Result<()> {
 		let revlog = Revlog::from_file(file)?;
 
 		println!("Revlog version = {}, flags = 0x{:x}", revlog.version, revlog.flags);
+
+		for entry in revlog.index {
+			println!("Entry {}: {}", entry.linkrev(), entry.short_id())
+		}
 	}
 	Ok(())
 }

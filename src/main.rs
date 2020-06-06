@@ -13,7 +13,6 @@ fn main() -> Result<()> {
 		let revlog = Revlog::from_file(file)?;
 
 		println!("Revlog version = {}, flags = 0x{:x}", revlog.version, revlog.flags);
-		println!("{:?}", revlog.index);
 	}
 	Ok(())
 }

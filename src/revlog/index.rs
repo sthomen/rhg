@@ -27,8 +27,7 @@ pub struct IndexV0 {
 	pub linkrev: u32,
 	pub parent1: [u8; 20],
 	pub parent2: [u8; 20],
-	pub nodeid: [u8; 20],
-	pub data: Option<Vec<u8>>
+	pub nodeid: [u8; 20]
 }
 
 impl IndexV0 {
@@ -50,8 +49,7 @@ impl IndexV0 {
 			linkrev: BigEndian::read_u32(&bytes[12..16]),
 			parent1: parent1,
 			parent2: parent2,
-			nodeid: nodeid,
-			data: None
+			nodeid: nodeid
 		})
 	}
 }
@@ -76,15 +74,15 @@ impl IndexV0 {
 
 #[derive(Debug)]
 pub struct IndexNG {
-	offset: u64,	// actually u48, but that doesn't exist
-	flags: u16,
-	length_compressed: u32,
-	length: u32,
-	baserev: u32,
-	linkrev: u32,
-	parent1: u32,
-	parent2: u32,
-	nodeid: [u8; 32]
+	pub offset: u64,	// actually u48, but that doesn't exist
+	pub flags: u16,
+	pub length_compressed: u32,
+	pub length: u32,
+	pub baserev: u32,
+	pub linkrev: u32,
+	pub parent1: u32,
+	pub parent2: u32,
+	pub nodeid: [u8; 32]
 }
 
 impl IndexNG {
@@ -119,6 +117,24 @@ pub enum Index {
 	NG(IndexNG)
 }
 
+macro_rules! simple_disambiguation {
+	($variant:ident, $parameter:ident) => {
+		match *$variant {
+			Index::V0(ref e) => e.$parameter,
+			Index::NG(ref e) => e.$parameter
+		}
+	}
+}
+
+macro_rules! nodeid_variant_to_vec {
+	($variant:ident, $parameter:ident) => {
+		match *$variant {
+			Index::V0(ref e) => e.$parameter.iter().cloned().collect(),
+			Index::NG(ref e) => e.$parameter.iter().cloned().collect()
+		}
+	}
+}
+
 impl Index {
 	/**
 	 * Returns the offset of the data as an u64, even though the internal
@@ -132,6 +148,17 @@ impl Index {
 	}
 
 	/**
+	 * Return the binary flags for this index, since V0 does not have flags,
+	 * we return all zeroes.
+	 */
+	pub fn flags(&self) -> u16 {
+		match *self {
+			Index::V0(ref _e) => 0,
+			Index::NG(ref e) => e.flags
+		}
+	}
+
+	/**
 	 * Returns the length of the (compressed for NG) data entry.
 	 */
 	pub fn length(&self) -> u32 {
@@ -139,5 +166,27 @@ impl Index {
 			Index::V0(ref e) => e.length,
 			Index::NG(ref e) => e.length_compressed
 		}
+	}
+
+	/**
+	 * Base revision
+	 */
+	pub fn baserev(&self) -> u32 {
+		simple_disambiguation!(self, baserev)
+	}
+
+	/**
+	 * Link revision
+	 */
+	pub fn linkrev(&self) -> u32 {
+		simple_disambiguation!(self, linkrev)
+	}
+
+	/**
+	 * Node ID:s are of variable length between the versions, so let's just
+	 * return a Vec of them.
+	 */
+	pub fn nodeid(&self) -> Vec<u8> {
+		nodeid_variant_to_vec!(self, nodeid)
 	}
 }

@@ -82,7 +82,7 @@ impl Revlog {
 		Ok((version, flags, length))
 	}
 
-	pub fn flag(&self, flag: u32) -> bool {
+	pub fn has_flag(&self, flag: u32) -> bool {
 		self.flags & flag != 0
 	}
 

@@ -208,4 +208,11 @@ impl Index {
 	pub fn short_id(&self) -> String {
 		hex::encode(&self.nodeid()[0..6])
 	}
+
+	pub fn size(&self) -> u64 {
+		match self {
+			Index::V0(_) => 76, 
+			Index::NG(_) => 64
+		}
+	}
 }

@@ -40,7 +40,7 @@ pub struct Revlog {
 }
 
 impl Revlog {
-	pub fn from_file(mut file: File) -> Result<Revlog> {
+	pub fn from_file(mut file: &File) -> Result<Revlog> {
 		let (version, flags, length) = Revlog::read_version(&file).unwrap();
 		let mut index = Vec::new();
 
@@ -49,7 +49,7 @@ impl Revlog {
 
 			// TODO instead of just skiping here, load the changeset data somewhere
 			if flags & REVLOG_FLAG_INLINE_DATA != 0 {
-				file.seek(SeekFrom::Current(entry.length().into()))?;
+				file.seek(SeekFrom::Current(entry.length() as i64))?;
 			}
 
 			index.push(entry);
@@ -101,5 +101,30 @@ impl Revlog {
 		}
 
 		Ok(index)
+	}
+
+	pub fn read_data(&self, mut file: &File, index: u64) -> Result<(Vec<u8>)> {
+		// find the entry in our index
+		let entry = &self.index[index as usize];
+
+		// load its length
+		let length = entry.length();
+		let offset;
+
+		// make some room to load the data
+		let mut buffer = vec![0u8; length as usize];
+
+		// calculate the actual offset
+		if self.has_flag(REVLOG_FLAG_INLINE_DATA) {
+			offset = entry.offset() + entry.size() * (index + 1);
+		} else {
+			offset = entry.offset();
+		}
+
+		// seek & load
+		file.seek(SeekFrom::Start(offset))?;
+		file.read_exact(&mut buffer)?;
+
+		Ok(buffer)
 	}
 }

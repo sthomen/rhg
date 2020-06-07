@@ -11,12 +11,14 @@ fn main() -> Result<()> {
 
 	if args.len() > 1 {
 		let file = File::open(&args[1])?;
-		let revlog = Revlog::from_file(file)?;
+		let revlog = Revlog::from_file(&file)?;
 
 		println!("Revlog version = {}, flags = 0x{:x}", revlog.version, revlog.flags);
 
-		for entry in revlog.index {
-			println!("Entry {}: {}", entry.linkrev(), entry.short_id())
+		for (index,entry) in revlog.index.iter().enumerate() {
+			println!("Entry {}: {}, offset: {}, length: {}", entry.linkrev(), entry.short_id(), entry.offset(), entry.length());
+
+			println!("Data: {:?}", revlog.read_data(&file, index as u64).unwrap());
 		}
 	}
 	Ok(())

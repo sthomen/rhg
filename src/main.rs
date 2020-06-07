@@ -18,7 +18,7 @@ fn main() -> Result<()> {
 		for (index,entry) in revlog.index.iter().enumerate() {
 			println!("Entry {}: {}, offset: {}, length: {}", entry.linkrev(), entry.short_id(), entry.offset(), entry.length());
 
-			println!("Data: {:?}", revlog.read_data(&file, index as u64).unwrap());
+			println!("{}", revlog.read_changeset(&file, index as u64)?);
 		}
 	}
 	Ok(())

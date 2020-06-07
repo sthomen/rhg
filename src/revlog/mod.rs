@@ -9,6 +9,9 @@ extern crate byteorder;
 mod index;
 use index::*;
 
+mod changeset;
+use changeset::Changeset;
+
 use std::fs::File;
 use std::io::{Result, Read, Seek, SeekFrom};
 use byteorder::{ByteOrder, BigEndian};
@@ -126,5 +129,9 @@ impl Revlog {
 		file.read_exact(&mut buffer)?;
 
 		Ok(buffer)
+	}
+
+	pub fn read_changeset(&self, file: &File, index: u64) -> Result<Changeset> {
+		Ok(Changeset::from(self.read_data(&file, index)?))
 	}
 }

@@ -4,7 +4,7 @@ extern crate datetime;
 use std::fmt;
 use std::io::Read;
 use std::string::String;
-use datetime::{OffsetDateTime,LocalDateTime,Offset};
+use datetime::{OffsetDateTime,LocalDateTime,Offset,ISO};
 use flate2::bufread::ZlibDecoder;
 
 #[derive(Debug)]
@@ -107,9 +107,9 @@ impl Changeset {
 
 impl fmt::Display for Changeset {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "Author: {}\nDate: XXX\nFiles: {}\n\n{}\n",
+		write!(f, "Author: {}\nDate: {}\nFiles: {}\n\n{}\n",
 			self.author.as_ref().unwrap(),
-//			self.when.unwrap(), OffsetDateTime is being a bitch
+			self.when.as_ref().unwrap().local.iso(),
 			self.files.join(", "),
 			self.message.as_ref().unwrap())
 	}

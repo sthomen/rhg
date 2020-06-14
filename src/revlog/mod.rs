@@ -4,17 +4,17 @@
 // ALWAYS throw a damn warning, as well as has_flag() being mostly useful
 // outside this crate.
 
+use std::fs::File;
+use std::io::{Result, Read, Seek, SeekFrom};
+
 extern crate byteorder;
+use byteorder::{ByteOrder, BigEndian};
 
 mod index;
 use index::*;
 
 mod changeset;
 use changeset::Changeset;
-
-use std::fs::File;
-use std::io::{Result, Read, Seek, SeekFrom};
-use byteorder::{ByteOrder, BigEndian};
 
 /*
  * Mercurial stores integers bigendian
@@ -37,20 +37,21 @@ pub const REVLOG_FLAG_GENERALDELTA: u32 = 1 << 17;
 const REVLOG_FLAG_MASK: u32 = 0x0000ffff;
 
 pub struct Revlog {
+	pub filename: String,
 	pub version: u32,
 	pub flags: u32,
 	pub index: Vec<Index>
 }
 
 impl Revlog {
-	pub fn from_file(mut file: &File) -> Result<Revlog> {
+	pub fn load(filename: &str) -> Result<Revlog> {
+		let mut file = File::open(filename)?;
 		let (version, flags, length) = Revlog::read_version(&file).unwrap();
 		let mut index = Vec::new();
 
 		loop {
 			let entry = Revlog::read_index(&file, version)?;
 
-			// TODO instead of just skiping here, load the changeset data somewhere
 			if flags & REVLOG_FLAG_INLINE_DATA != 0 {
 				file.seek(SeekFrom::Current(entry.length() as i64))?;
 			}
@@ -64,6 +65,7 @@ impl Revlog {
 		}
 
 		Ok(Revlog {
+			filename: String::from(filename),
 			version: version,
 			flags: flags,
 			index: index
@@ -90,10 +92,6 @@ impl Revlog {
 		Ok((version, flags, length))
 	}
 
-	pub fn has_flag(&self, flag: u32) -> bool {
-		self.flags & flag != 0
-	}
-
 	fn read_index(file: &File, version: u32) -> Result<Index> {
 		let index: Index;
 
@@ -106,23 +104,31 @@ impl Revlog {
 		Ok(index)
 	}
 
-	pub fn read_data(&self, mut file: &File, index: u64) -> Result<(Vec<u8>)> {
+	pub fn read_data(&self, index: u64) -> Result<(Vec<u8>)> {
 		// find the entry in our index
 		let entry = &self.index[index as usize];
 
 		// load its length
 		let length = entry.length();
 		let offset;
-
-		// make some room to load the data
-		let mut buffer = vec![0u8; length as usize];
+		let mut filename = self.filename.to_string();
 
 		// calculate the actual offset
 		if self.has_flag(REVLOG_FLAG_INLINE_DATA) {
 			offset = entry.offset() + entry.size() * (index + 1);
 		} else {
 			offset = entry.offset();
+
+			// replace the .i in the filename with a .d
+			filename.pop();
+			filename.push('d');
 		}
+
+		// open the file
+		let mut file = File::open(&filename)?;
+
+		// make some room to load the data
+		let mut buffer = vec![0u8; length as usize];
 
 		// seek & load
 		file.seek(SeekFrom::Start(offset))?;
@@ -131,7 +137,11 @@ impl Revlog {
 		Ok(buffer)
 	}
 
-	pub fn read_changeset(&self, file: &File, index: u64) -> Result<Changeset> {
-		Ok(Changeset::from(self.read_data(&file, index)?))
+	pub fn read_changeset(&self, index: u64) -> Result<Changeset> {
+		Ok(Changeset::from(self.read_data(index)?))
+	}
+
+	pub fn has_flag(&self, flag: u32) -> bool {
+		self.flags & flag != 0
 	}
 }
